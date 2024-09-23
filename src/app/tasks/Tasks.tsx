@@ -172,10 +172,10 @@ const Tasks: React.FC = () => {
         </Button>
       </div>
       <Table
-        dataSource={tasks as unknown as readonly Task[]}
+        dataSource={tasks as unknown as readonly Task[]} // Cast to readonly
         columns={columns}
         tableLayout='fixed'
-        rowKey='_id'
+        rowKey='id' // Updated to match Task interface
         loading={loading}
         pagination={{ pageSize: 10 }}
       />
