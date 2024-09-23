@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import Cookies from "js-cookie";
-import { message } from "antd"; // Import Ant Design's message component
+import { message } from "antd";
 
 interface AuthState {
   token: string | null;
@@ -19,36 +19,34 @@ const initialState: AuthState = {
   loading: false,
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5002/api/auth";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5002/api";
 
-// Async thunk for signup
 export const signUp = createAsyncThunk(
   "auth/signUp",
   async (userData: { name: string; email: string; password: string }, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${API_URL}/register`, userData);
-      Cookies.set('Authorization', response.data.token); // Store token in cookies
+      const response = await axios.post(`${API_URL}/auth/register`, userData);
+      Cookies.set('Authorization', response.data.token);
 
-      message.success("Signup successful!"); // Success message
-      return response.data; // Return both token and user
+      message.success("Signup successful!");
+      return response.data;
     } catch (error: any) {
-      message.error(error.response?.data?.message || "Signup failed"); // Error message
+      message.error(error.response?.data?.message || "Signup failed"); 
       return rejectWithValue(error.response?.data?.message || "Signup failed");
     }
   }
 );
 
-// Async thunk for login
 export const login = createAsyncThunk(
   "auth/login",
   async (credentials: { email: string; password: string }, { rejectWithValue }) => {
     try {
-      const response = await axios.post(`${API_URL}/login`, credentials);
-      message.success("Login successful!"); // Success message
-      Cookies.set('Authorization', response.data.token); // Store token in cookies
-      return response.data; // Return both token and user
+      const response = await axios.post(`${API_URL}/auth/login`, credentials);
+      message.success("Login successful!"); 
+      Cookies.set('Authorization', response.data.token); 
+      return response.data;
     } catch (error: any) {
-      message.error(error.response?.data?.message || "Login failed"); // Error message
+      message.error(error.response?.data?.message || "Login failed"); 
       return rejectWithValue(error.response?.data?.message || "Login failed");
     }
   }
@@ -59,32 +57,31 @@ export const fetchProfile = createAsyncThunk(
   "auth/fetchProfile",
   async (_, { rejectWithValue }) => {
     try {
-      const token = Cookies.get('Authorization'); // Retrieve token from cookies
+      const token = Cookies.get('Authorization');
 
-      const response = await axios.post(`${API_URL}/profile`,null, {
+      const response = await axios.post(`${API_URL}/auth/profile`,null, {
         headers: {
-          Authorization: token, // Add Authorization header
+          Authorization: token, 
         },
       });
       return response.data;
     } catch (error: any) {
-      message.error(error.response?.data?.message || "Failed to fetch profile"); // Error message
+      message.error(error.response?.data?.message || "Failed to fetch profile"); 
       return rejectWithValue(error.response?.data?.message || "Failed to fetch profile");
     }
   }
 );
 
 
-// Async thunk for updating user profile
 export const updateProfile = createAsyncThunk(
   "auth/updateProfile",
   async (profileData: { name: string; email: string }, { rejectWithValue }) => {
     try {
-      const response = await axios.put(`${API_URL}/profile`, profileData);
-      message.success("Profile updated successfully!"); // Success message
+      const response = await axios.put(`${API_URL}/auth/profile`, profileData);
+      message.success("Profile updated successfully!");  
       return response.data;
     } catch (error: any) {
-      message.error(error.response?.data?.message || "Failed to update profile"); // Error message
+      message.error(error.response?.data?.message || "Failed to update profile");
       return rejectWithValue(error.response?.data?.message || "Failed to update profile");
     }
   }
@@ -101,12 +98,11 @@ const authSlice = createSlice({
     clearAuthState: (state) => {
       state.token = null;
       state.user = null;
-      Cookies.remove('Authorization'); // Clear the cookie on logout
+      Cookies.remove('Authorization'); 
     },
   },
   extraReducers: (builder) => {
     builder
-      // Signup cases
       .addCase(signUp.pending, (state) => {
         state.loading = true;
       })
@@ -119,7 +115,6 @@ const authSlice = createSlice({
         state.loading = false;
       })
 
-      // Login cases
       .addCase(login.pending, (state) => {
         state.loading = true;
       })
@@ -132,33 +127,31 @@ const authSlice = createSlice({
         state.loading = false;
       })
 
-      // Fetch Profile cases
       .addCase(fetchProfile.pending, (state) => {
         state.loading = true;
       })
       .addCase(fetchProfile.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload; // Assuming the API returns user data
+        state.user = action.payload;
         state.token = action.payload.token
-        message.success("Profile fetched successfully!"); // Success message
+        message.success("Profile fetched successfully!"); 
       })
       .addCase(fetchProfile.rejected, (state, action) => {
         state.loading = false;
-        message.error("Profile not fetched successfully!"); // Error message
+        message.error("Profile not fetched successfully!"); 
       })
 
-      // Update Profile cases
       .addCase(updateProfile.pending, (state) => {
         state.loading = true;
       })
       .addCase(updateProfile.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload; // Assuming the API returns the updated user data
-        message.success("Profile updated successfully!"); // Success message
+        state.user = action.payload; 
+        message.success("Profile updated successfully!"); 
       })
       .addCase(updateProfile.rejected, (state, action) => {
         state.loading = false;
-        message.error("Profile not Updated successfully!"); // Success message
+        message.error("Profile not Updated successfully!"); 
 
       });
   },

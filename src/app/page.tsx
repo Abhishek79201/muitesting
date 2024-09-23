@@ -1,4 +1,5 @@
-'use client' // Mark this as a client-side component
+/* eslint-disable react-hooks/exhaustive-deps */
+'use client'
 import Link from 'next/link'
 import { Spin } from 'antd'
 import { useAppDispatch, useAppSelector } from './hooks/hooks'
@@ -15,7 +16,7 @@ import Tasks from './tasks/Tasks'
 export default function Home () {
   const user = useAppSelector(selectUser)
   const loading = useAppSelector(selectLoading)
-  const token = Cookies.get('Authorization') // Retrieve token from cookies
+  const token = Cookies.get('Authorization')
   const dispatch = useAppDispatch()
   useEffect(() => {
     dispatch(fetchProfile())

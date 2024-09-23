@@ -17,17 +17,17 @@ import {
   fetchTasks,
   deleteTask,
   updateTask,
-  createTask
+  createTask,
+  fetchTaskMetrics
 } from '@/redux/slices/tasksSlice'
 import { useRouter } from 'next/navigation'
 import { clearAuthState } from '@/redux/slices/authSlice'
-
-// Define the Task interface for type safety
-interface Task {
+export interface Task {
   _id: string
   title: string
   description: string
   completed: boolean
+  completedts?: Date
 }
 
 const Tasks: React.FC = () => {
@@ -40,12 +40,11 @@ const Tasks: React.FC = () => {
   const [currentTask, setCurrentTask] = useState<Task | null>(null)
   const [form] = Form.useForm()
 
-  // Fetch tasks when the component mounts
   useEffect(() => {
     dispatch(fetchTasks())
+    dispatch(fetchTaskMetrics())
   }, [dispatch])
 
-  // Function to show the modal for adding or editing a task
   const showModal = (task: Task | null = null) => {
     if (task) {
       setIsEditing(true)
@@ -58,23 +57,21 @@ const Tasks: React.FC = () => {
     setIsModalVisible(true)
   }
 
-  // Function to handle modal cancellation
   const handleCancel = () => {
     setIsModalVisible(false)
   }
 
-  // Function to handle task deletion
   const handleDelete = async (id: string) => {
     try {
       await dispatch(deleteTask(id)).unwrap()
       message.success('Task deleted successfully!')
-      dispatch(fetchTasks()) // Refresh tasks
+      dispatch(fetchTasks())
+      dispatch(fetchTaskMetrics())
     } catch (error) {
       message.error('Task deletion failed.')
     }
   }
 
-  // Function to handle form submission for adding/editing tasks
   const handleFinish = async (values: Omit<Task, '_id' | 'completed'>) => {
     try {
       if (isEditing && currentTask) {
@@ -87,13 +84,13 @@ const Tasks: React.FC = () => {
         message.success('Task added successfully!')
       }
       setIsModalVisible(false)
-      dispatch(fetchTasks()) // Refresh tasks
+      dispatch(fetchTasks())
+      dispatch(fetchTaskMetrics())
     } catch (error) {
       message.error('Task saving failed.')
     }
   }
 
-  // Function to handle toggling task completion status
   const handleComplete = async (task: Task) => {
     try {
       await dispatch(
@@ -102,13 +99,13 @@ const Tasks: React.FC = () => {
       message.success(
         `Task marked as ${!task.completed ? 'completed' : 'incomplete'}!`
       )
-      dispatch(fetchTasks()) // Refresh tasks
+      dispatch(fetchTasks())
+      dispatch(fetchTaskMetrics())
     } catch (error) {
       message.error('Failed to update task completion status.')
     }
   }
 
-  // Define the columns for the Ant Design Table
   const columns: ColumnsType<Task> = [
     {
       title: 'Title',
@@ -167,18 +164,18 @@ const Tasks: React.FC = () => {
           Add New Task
         </Button>
         <Button
-          color='danger'
-          variant='solid'
+          type='primary'
+          danger
           onClick={() => dispatch(clearAuthState())}
         >
           Log out
         </Button>
       </div>
       <Table
-        dataSource={tasks}
+        dataSource={tasks as unknown as readonly Task[]}
         columns={columns}
         tableLayout='fixed'
-        rowKey='id' // Ensure this matches the unique identifier of your tasks
+        rowKey='_id'
         loading={loading}
         pagination={{ pageSize: 10 }}
       />

@@ -1,5 +1,3 @@
-// pages/signup.tsx
-
 'use client'
 
 import React, { useState } from 'react'
@@ -23,7 +21,7 @@ const SignUp: React.FC = () => {
       console.log(values)
       await dispatch(signUp(values)).unwrap()
       message.success('Sign up successful!')
-      router.push('/signin') // Redirect to sign in page
+      router.push('/signin')
     } catch (error) {
       message.error('Sign up failed, please try again.')
     }

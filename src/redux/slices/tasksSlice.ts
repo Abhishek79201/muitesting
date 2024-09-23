@@ -30,7 +30,6 @@ const initialState: TasksState = {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5002/api";
 
-// Async thunk for fetching tasks
 export const fetchTasks = createAsyncThunk(
   "tasks/fetchTasks",
   async (_, { rejectWithValue }) => {
@@ -38,7 +37,7 @@ export const fetchTasks = createAsyncThunk(
       const token = Cookies.get('Authorization'); 
       const response = await axios.get(`${API_URL}/tasks`, {
         headers: {
-          Authorization: token, // Add Authorization header
+          Authorization: token,
         },
       })
         return response.data;
@@ -48,7 +47,6 @@ export const fetchTasks = createAsyncThunk(
   }
 );
 
-// Async thunk for creating a task
 export const createTask = createAsyncThunk(
   "tasks/createTask",
   async (taskData: { title?: string; description?: string; completed?: boolean }, { rejectWithValue }) => {
@@ -57,7 +55,7 @@ export const createTask = createAsyncThunk(
 
       const response = await axios.post(`${API_URL}/tasks`, taskData, {
         headers: {
-          Authorization: token, // Add Authorization header
+          Authorization: token, 
         },
       });
       return response.data;
@@ -67,11 +65,10 @@ export const createTask = createAsyncThunk(
   }
 );
 
-// Async thunk for updating a task
 export const updateTask = createAsyncThunk(
   "tasks/updateTask",
   async (
-    { id, taskData }: { id: number; taskData: { title?: string; description?: string; completed?: boolean } },
+    { id, taskData }: { id: string; taskData: { title?: string; description?: string; completed?: boolean } },
     { rejectWithValue }
   ) => {
     try {
@@ -79,7 +76,7 @@ export const updateTask = createAsyncThunk(
       console.log(id, taskData);
       const response = await axios.put(`${API_URL}/tasks/${id}`, taskData, {
         headers: {
-          Authorization: token, // Add Authorization header
+          Authorization: token,
         },
       });
       return response.data;
@@ -89,31 +86,35 @@ export const updateTask = createAsyncThunk(
   }
 );
 
-// Async thunk for deleting a task
 export const deleteTask = createAsyncThunk(
   "tasks/deleteTask",
-  async (id: number, { rejectWithValue }) => {
+  async (id: string, { rejectWithValue }) => {
     const token = Cookies.get('Authorization'); 
 
     try {
       await axios.delete(`${API_URL}/tasks/${id}`,{
         headers: {
-          Authorization: token, // Add Authorization header
+          Authorization: token, 
         },
       });
-      return id; // Return the ID of the deleted task
+      return id;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || "Failed to delete task");
     }
   }
 );
 
-// Async thunk for fetching task metrics
 export const fetchTaskMetrics = createAsyncThunk(
   "tasks/fetchTaskMetrics",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`${API_URL}/metrics`);
+      const token = Cookies.get('Authorization'); 
+
+      const response = await axios.get(`${API_URL}/metrics`,{
+        headers: {
+          Authorization: token, 
+        },
+      });
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || "Failed to fetch task metrics");
@@ -125,11 +126,9 @@ const tasksSlice = createSlice({
   name: "tasks",
   initialState,
   reducers: {
-    // Optional additional reducers
   },
   extraReducers: (builder) => {
     builder
-      // Fetch tasks
       .addCase(fetchTasks.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -143,7 +142,6 @@ const tasksSlice = createSlice({
         state.error = action.payload as string;
       })
       
-      // Create task
       .addCase(createTask.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -157,7 +155,6 @@ const tasksSlice = createSlice({
         state.error = action.payload as string;
       })
       
-      // Update task
       .addCase(updateTask.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -174,21 +171,19 @@ const tasksSlice = createSlice({
         state.error = action.payload as string;
       })
       
-      // Delete task
       .addCase(deleteTask.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(deleteTask.fulfilled, (state, action) => {
         state.loading = false;
-        state.tasks = state.tasks.filter((task) => task.id !== action.payload);
+        state.tasks = state.tasks.filter((task:any) => task.id !== action.payload);
       })
       .addCase(deleteTask.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })
       
-      // Fetch task metrics
       .addCase(fetchTaskMetrics.pending, (state) => {
         state.loading = true;
         state.error = null;
