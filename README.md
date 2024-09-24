@@ -47,6 +47,6 @@ A web application built with React for the frontend and Node.js for the backend,
 
 1. **Clone the repository**:
    ```bash
-   git clone <your-repo-url>
+   git clone (https://github.com/Abhishek79201/taskdemo.git)
    cd task-management-app
    ```
