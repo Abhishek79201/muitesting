@@ -110,7 +110,7 @@ export const fetchTaskMetrics = createAsyncThunk(
     try {
       const token = Cookies.get('Authorization'); 
 
-      const response = await axios.get(`${API_URL}/metrics`,{
+      const response = await axios.get(`${API_URL}/tasks/metrics`,{
         headers: {
           Authorization: token, 
         },
@@ -191,6 +191,7 @@ const tasksSlice = createSlice({
       .addCase(fetchTaskMetrics.fulfilled, (state, action) => {
         state.loading = false;
         state.metrics = action.payload;
+        console.log("matrics:",action.payload)
       })
       .addCase(fetchTaskMetrics.rejected, (state, action) => {
         state.loading = false;
