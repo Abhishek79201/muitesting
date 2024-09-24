@@ -1,7 +1,11 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import Cookies from "js-cookie";
+import {
 
+  message,
+
+} from 'antd'
 interface Task {
   id: number;
   title: string;
@@ -11,7 +15,7 @@ interface Task {
 interface Metrics {
   totalTasks: number;
   completedTasks: number;
-  pendingTasks: number;
+  remainingTasks: number;
 }
 
 interface TasksState {
@@ -73,12 +77,14 @@ export const updateTask = createAsyncThunk(
   ) => {
     try {
       const token = Cookies.get('Authorization'); 
-      console.log(id, taskData);
+
       const response = await axios.put(`${API_URL}/tasks/${id}`, taskData, {
         headers: {
           Authorization: token,
         },
       });
+      message.success("Task Updated Successfully!"); 
+
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || "Failed to update task");
@@ -160,10 +166,9 @@ const tasksSlice = createSlice({
         state.error = null;
       })
       .addCase(updateTask.fulfilled, (state, action) => {
-        state.loading = false;
-        const index = state.tasks.findIndex((task) => task.id === action.payload.id);
+        const index = state.tasks.findIndex((task:any) => task._id === action.payload._id)
         if (index !== -1) {
-          state.tasks[index] = action.payload;
+          state.tasks[index] = action.payload // Update task in the state
         }
       })
       .addCase(updateTask.rejected, (state, action) => {
@@ -176,8 +181,7 @@ const tasksSlice = createSlice({
         state.error = null;
       })
       .addCase(deleteTask.fulfilled, (state, action) => {
-        state.loading = false;
-        state.tasks = state.tasks.filter((task:any) => task.id !== action.payload);
+        state.tasks = state.tasks.filter((task:any) => task._id !== action.payload)
       })
       .addCase(deleteTask.rejected, (state, action) => {
         state.loading = false;
@@ -191,7 +195,6 @@ const tasksSlice = createSlice({
       .addCase(fetchTaskMetrics.fulfilled, (state, action) => {
         state.loading = false;
         state.metrics = action.payload;
-        console.log("matrics:",action.payload)
       })
       .addCase(fetchTaskMetrics.rejected, (state, action) => {
         state.loading = false;

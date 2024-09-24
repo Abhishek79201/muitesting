@@ -1,17 +1,30 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { Pie } from '@nivo/pie'
 import {
-  Table,
+  Box,
   Button,
-  message,
-  Popconfirm,
+  Typography,
+  TableContainer,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  Checkbox,
   Modal,
-  Form,
-  Input,
-  Checkbox
-} from 'antd'
-import { ColumnsType } from 'antd/lib/table'
+  TextField,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
+} from '@mui/material'
+import DeleteIcon from '@mui/icons-material/Delete'
+import EditIcon from '@mui/icons-material/Edit'
+import PieChartIcon from '@mui/icons-material/PieChart'
 import { useAppDispatch, useAppSelector } from '../hooks/hooks'
 import {
   fetchTasks,
@@ -20,8 +33,9 @@ import {
   createTask,
   fetchTaskMetrics
 } from '@/redux/slices/tasksSlice'
-import { useRouter } from 'next/navigation'
 import { clearAuthState } from '@/redux/slices/authSlice'
+import { useRouter } from 'next/navigation'
+
 export interface Task {
   _id: string
   title: string
@@ -32,62 +46,79 @@ export interface Task {
 
 const Tasks: React.FC = () => {
   const dispatch = useAppDispatch()
-  const { tasks, loading } = useAppSelector(state => state.tasks)
-  const router = useRouter()
-
-  const [isModalVisible, setIsModalVisible] = useState(false)
+  const { tasks, metrics } = useAppSelector(state => state.tasks)
+  const user = useAppSelector(state => state.auth.user)
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [currentTask, setCurrentTask] = useState<Task | null>(null)
-  const [form] = Form.useForm()
+  const [formValues, setFormValues] = useState({ title: '', description: '' })
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null)
+  const [isMetricsDialogOpen, setIsMetricsDialogOpen] = useState(false)
 
   useEffect(() => {
     dispatch(fetchTasks())
     dispatch(fetchTaskMetrics())
   }, [dispatch])
 
+  const pieData = [
+    {
+      id: 'Completed Tasks',
+      label: 'Completed',
+      value: metrics?.completedTasks || 0,
+      color: 'hsl(134, 70%, 50%)'
+    },
+    {
+      id: 'Remaining Tasks',
+      label: 'Remaining',
+      value: metrics?.remainingTasks || 0,
+      color: 'red'
+    }
+  ]
+
   const showModal = (task: Task | null = null) => {
     if (task) {
       setIsEditing(true)
       setCurrentTask(task)
-      form.setFieldsValue(task)
+      setFormValues({ title: task.title, description: task.description })
     } else {
       setIsEditing(false)
-      form.resetFields()
+      setFormValues({ title: '', description: '' })
     }
-    setIsModalVisible(true)
+    setIsModalOpen(true)
   }
 
-  const handleCancel = () => {
-    setIsModalVisible(false)
+  const handleClose = () => {
+    setIsModalOpen(false)
   }
 
-  const handleDelete = async (id: string) => {
-    try {
-      await dispatch(deleteTask(id)).unwrap()
-      message.success('Task deleted successfully!')
-      dispatch(fetchTasks())
-      dispatch(fetchTaskMetrics())
-    } catch (error) {
-      message.error('Task deletion failed.')
+  const handleDelete = async () => {
+    if (taskToDelete) {
+      try {
+        await dispatch(deleteTask(taskToDelete._id)).unwrap()
+        dispatch(fetchTasks())
+        dispatch(fetchTaskMetrics())
+      } catch (error) {
+      } finally {
+        setIsDialogOpen(false)
+        setTaskToDelete(null)
+      }
     }
   }
 
-  const handleFinish = async (values: Omit<Task, '_id' | 'completed'>) => {
+  const handleSubmit = async () => {
     try {
       if (isEditing && currentTask) {
         await dispatch(
-          updateTask({ id: currentTask._id, taskData: values })
+          updateTask({ id: currentTask._id, taskData: formValues })
         ).unwrap()
-        message.success('Task updated successfully!')
+        dispatch(fetchTaskMetrics())
       } else {
-        await dispatch(createTask({ ...values, completed: false })).unwrap()
-        message.success('Task added successfully!')
+        await dispatch(createTask({ ...formValues, completed: false })).unwrap()
       }
-      setIsModalVisible(false)
-      dispatch(fetchTasks())
-      dispatch(fetchTaskMetrics())
+      setIsModalOpen(false)
     } catch (error) {
-      message.error('Task saving failed.')
+      console.error('Task saving failed:', error)
     }
   }
 
@@ -96,117 +127,187 @@ const Tasks: React.FC = () => {
       await dispatch(
         updateTask({ id: task._id, taskData: { completed: !task.completed } })
       ).unwrap()
-      message.success(
-        `Task marked as ${!task.completed ? 'completed' : 'incomplete'}!`
-      )
-      dispatch(fetchTasks())
       dispatch(fetchTaskMetrics())
     } catch (error) {
-      message.error('Failed to update task completion status.')
+      console.error('Failed to update task status:', error)
     }
   }
 
-  const columns: ColumnsType<Task> = [
-    {
-      title: 'Title',
-      dataIndex: 'title',
-      key: 'title',
-      sorter: (a, b) => a.title.localeCompare(b.title),
-      render: text => <span>{text}</span>
-    },
-    {
-      title: 'Description',
-      dataIndex: 'description',
-      key: 'description',
-      sorter: (a, b) => a.description.localeCompare(b.description),
-      render: text => <span>{text}</span>
-    },
-    {
-      title: 'Completed',
-      key: 'completed',
-      render: (_, record) => (
-        <Checkbox
-          checked={record.completed}
-          onChange={() => handleComplete(record)}
-        >
-          {record.completed ? 'Completed' : 'Incomplete'}
-        </Checkbox>
-      )
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      render: (_, record) => (
-        <>
-          <Button type='link' onClick={() => showModal(record)}>
-            Edit
-          </Button>
-          <Popconfirm
-            title='Are you sure you want to delete this task?'
-            onConfirm={() => handleDelete(record._id)}
-            okText='Yes'
-            cancelText='No'
-          >
-            <Button type='link' danger>
-              Delete
-            </Button>
-          </Popconfirm>
-        </>
-      )
-    }
-  ]
+  const confirmDelete = (task: Task) => {
+    setTaskToDelete(task)
+    setIsDialogOpen(true)
+  }
+
+  const handleDialogClose = () => {
+    setIsDialogOpen(false)
+    setTaskToDelete(null)
+  }
+
+  const handleMetricsDialogOpen = () => {
+    setIsMetricsDialogOpen(true)
+  }
+
+  const handleMetricsDialogClose = () => {
+    setIsMetricsDialogOpen(false)
+  }
 
   return (
-    <div className='container mx-auto py-6'>
-      <h2 className='text-2xl font-semibold text-center mb-4'>Your Tasks</h2>
-      <div className='flex gap-2'>
-        <Button type='primary' className='mb-4' onClick={() => showModal()}>
+    <Box sx={{ p: 3 }}>
+      <Typography variant='h4' align='center' gutterBottom>
+        {user?.name} Tasks
+      </Typography>
+
+      <Box display='flex' gap={2} mb={2}>
+        <Button variant='contained' onClick={() => showModal()}>
           Add New Task
         </Button>
         <Button
-          type='primary'
-          danger
+          variant='outlined'
+          color='error'
           onClick={() => dispatch(clearAuthState())}
         >
           Log out
         </Button>
-      </div>
-      <Table
-        dataSource={tasks as unknown as readonly Task[]} // Cast to readonly
-        columns={columns}
-        tableLayout='fixed'
-        rowKey='id' // Updated to match Task interface
-        loading={loading}
-        pagination={{ pageSize: 10 }}
-      />
+        <Button
+          variant='outlined'
+          startIcon={<PieChartIcon />}
+          onClick={handleMetricsDialogOpen}
+        >
+          Show Task Metrics
+        </Button>
+      </Box>
 
-      <Modal
-        title={isEditing ? 'Edit Task' : 'Add Task'}
-        visible={isModalVisible}
-        onCancel={handleCancel}
-        onOk={() => form.submit()}
-        okText={isEditing ? 'Update' : 'Create'}
-      >
-        <Form form={form} layout='vertical' onFinish={handleFinish}>
-          <Form.Item
-            name='title'
+      <TableContainer>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Title</TableCell>
+              <TableCell>Description</TableCell>
+              <TableCell>Completed</TableCell>
+              <TableCell>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {tasks.map((task: any) => (
+              <TableRow key={task?._id}>
+                <TableCell>{task?.title}</TableCell>
+                <TableCell>{task?.description}</TableCell>
+                <TableCell>
+                  <Checkbox
+                    checked={task?.completed}
+                    onChange={() => handleComplete(task)}
+                  />
+                </TableCell>
+                <TableCell>
+                  <IconButton onClick={() => showModal(task)} aria-label='edit'>
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton
+                    onClick={() => confirmDelete(task)}
+                    aria-label='delete'
+                    color='error'
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Modal for creating/updating tasks */}
+      <Modal open={isModalOpen} onClose={handleClose}>
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 400,
+            bgcolor: 'background.paper',
+            boxShadow: 24,
+            p: 4
+          }}
+        >
+          <Typography variant='h6' component='h2'>
+            {isEditing ? 'Edit Task' : 'Add Task'}
+          </Typography>
+          <TextField
             label='Title'
-            rules={[{ required: true, message: 'Please input the title!' }]}
-          >
-            <Input placeholder='Enter task title' />
-          </Form.Item>
-          <Form.Item
-            name='description'
+            value={formValues.title}
+            onChange={e =>
+              setFormValues({ ...formValues, title: e.target.value })
+            }
+            fullWidth
+            margin='normal'
+            required
+          />
+          <TextField
             label='Description'
-            rules={[
-              { required: true, message: 'Please input the description!' }
-            ]}
-          >
-            <Input.TextArea placeholder='Enter task description' rows={4} />
-          </Form.Item>
-        </Form>
+            value={formValues.description}
+            onChange={e =>
+              setFormValues({ ...formValues, description: e.target.value })
+            }
+            fullWidth
+            margin='normal'
+            multiline
+            rows={4}
+            required
+          />
+          <Box display='flex' justifyContent='flex-end' mt={2}>
+            <Button variant='outlined' onClick={handleClose} sx={{ mr: 2 }}>
+              Cancel
+            </Button>
+            <Button variant='contained' onClick={handleSubmit}>
+              {isEditing ? 'Update' : 'Create'}
+            </Button>
+          </Box>
+        </Box>
       </Modal>
-    </div>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={isDialogOpen} onClose={handleDialogClose}>
+        <DialogTitle>Delete Task</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this task? This action cannot be
+            undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDialogClose}>Cancel</Button>
+          <Button onClick={handleDelete} color='error' variant='contained'>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Task Metrics Dialog */}
+      <Dialog
+        open={isMetricsDialogOpen}
+        onClose={handleMetricsDialogClose}
+        maxWidth='sm'
+        fullWidth
+      >
+        <DialogTitle>Task Metrics</DialogTitle>
+        <DialogContent>
+          <Pie
+            data={pieData}
+            innerRadius={0.5}
+            colors={{ datum: 'data.color' }}
+            arcLinkLabelsThickness={0}
+            height={300}
+            width={300}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleMetricsDialogClose} variant='contained'>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   )
 }
 

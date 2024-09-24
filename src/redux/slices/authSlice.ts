@@ -132,7 +132,7 @@ const authSlice = createSlice({
       })
       .addCase(fetchProfile.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload;
+        state.user = action.payload.user;
         state.token = action.payload.token
         message.success("Profile fetched successfully!"); 
       })
