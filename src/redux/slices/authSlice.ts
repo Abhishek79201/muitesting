@@ -105,58 +105,64 @@ const authSlice = createSlice({
     builder
       .addCase(signUp.pending, (state) => {
         state.loading = true;
+        message.loading("Signing up...", 0); // Display loading message with no timeout
       })
       .addCase(signUp.fulfilled, (state, action) => {
         state.loading = false;
         state.token = action.payload.token;
         state.user = action.payload.user;
+        message.destroy(); // Remove loading message
       })
-      .addCase(signUp.rejected, (state, action) => {
+      .addCase(signUp.rejected, (state) => {
         state.loading = false;
+        message.destroy(); // Remove loading message
       })
 
       .addCase(login.pending, (state) => {
         state.loading = true;
+        message.loading("Logging in...", 0); // Display loading message with no timeout
       })
       .addCase(login.fulfilled, (state, action) => {
         state.loading = false;
         state.token = action.payload.token;
         state.user = action.payload.user;
+        message.destroy(); // Remove loading message
       })
-      .addCase(login.rejected, (state, action) => {
+      .addCase(login.rejected, (state) => {
         state.loading = false;
+        message.destroy(); // Remove loading message
       })
 
       .addCase(fetchProfile.pending, (state) => {
         state.loading = true;
+        message.loading("Fetching profile...", 0); // Display loading message with no timeout
       })
       .addCase(fetchProfile.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.user;
-        state.token = action.payload.token
-        message.success("Profile fetched successfully!"); 
+        state.token = action.payload.token;
+        message.destroy(); // Remove loading message
       })
-      .addCase(fetchProfile.rejected, (state, action) => {
+      .addCase(fetchProfile.rejected, (state) => {
         state.loading = false;
-        message.error("Profile not fetched successfully!"); 
+        message.destroy(); // Remove loading message
       })
 
       .addCase(updateProfile.pending, (state) => {
         state.loading = true;
+        message.loading("Updating profile...", 0); // Display loading message with no timeout
       })
       .addCase(updateProfile.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload; 
-        message.success("Profile updated successfully!"); 
+        state.user = action.payload;
+        message.destroy(); // Remove loading message
       })
-      .addCase(updateProfile.rejected, (state, action) => {
+      .addCase(updateProfile.rejected, (state) => {
         state.loading = false;
-        message.error("Profile not Updated successfully!"); 
-
+        message.destroy(); // Remove loading message
       });
   },
 });
-
 
 export const { setToken, clearAuthState } = authSlice.actions;
 export const selectToken = (state: { auth: { token: unknown; }; })=> state.auth.token

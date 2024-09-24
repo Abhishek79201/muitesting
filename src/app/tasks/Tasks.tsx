@@ -112,10 +112,10 @@ const Tasks: React.FC = () => {
         await dispatch(
           updateTask({ id: currentTask._id, taskData: formValues })
         ).unwrap()
-        dispatch(fetchTaskMetrics())
       } else {
         await dispatch(createTask({ ...formValues, completed: false })).unwrap()
       }
+      dispatch(fetchTaskMetrics())
       setIsModalOpen(false)
     } catch (error) {
       console.error('Task saving failed:', error)
@@ -136,6 +136,7 @@ const Tasks: React.FC = () => {
   const confirmDelete = (task: Task) => {
     setTaskToDelete(task)
     setIsDialogOpen(true)
+    dispatch(fetchTaskMetrics())
   }
 
   const handleDialogClose = () => {
